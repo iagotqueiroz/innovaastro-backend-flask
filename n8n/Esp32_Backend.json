@@ -1,0 +1,279 @@
+{
+  "name": "Esp32-Backend",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "c98a1d88-d1c6-4521-89f0-25ad255457a2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        400
+      ],
+      "id": "538c0cc3-5b2d-46c3-a43b-591325cf2aa6",
+      "name": "Webhook1",
+      "webhookId": "c98a1d88-d1c6-4521-89f0-25ad255457a2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"verision\": \"1.0.0\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        200
+      ],
+      "id": "28485615-0927-48d9-8ad3-e9ead7ac0c36",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bbefebca-7d37-4226-8760-57e3c0656318",
+              "leftValue": "={{ $json['COUNT(*)'] }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        400
+      ],
+      "id": "2555b478-49b1-466e-9c34-9620cfcb61e0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) FROM devices WHERE uniqueid = '{{ $json.query.uid }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        20,
+        400
+      ],
+      "id": "e27884ba-c226-4430-9a41-2a82bcfa9463",
+      "name": "VerificaDispositivoCadastrado",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "pAsif1g6D0J4GEIE",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "value": "devices",
+          "mode": "list",
+          "cachedResultName": "devices"
+        },
+        "dataMode": "defineBelow",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "uniqueid",
+              "value": "={{ $('Webhook1').item.json.query.uid }}"
+            },
+            {
+              "column": "ip",
+              "value": "={{ $('Webhook1').item.json.query.device_ip }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        480,
+        200
+      ],
+      "id": "0d1c1414-9f87-4d9f-ac8b-58ca2e00304e",
+      "name": "CadastraDispositivo",
+      "credentials": {
+        "mySql": {
+          "id": "pAsif1g6D0J4GEIE",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM move_request WHERE device_id = 1 AND movido = 0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        460,
+        500
+      ],
+      "id": "b5bae18f-9340-488e-983d-9d866d40368f",
+      "name": "VerificaRequisicaoDeMovimento",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "pAsif1g6D0J4GEIE",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        500
+      ],
+      "id": "3f9480c1-992d-4094-8250-ba0e84aa40c4",
+      "name": "EnviaRequisicaoParaEsp32"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE move_request SET movido = 1  WHERE device_id = 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        980,
+        500
+      ],
+      "id": "cce23544-ff51-474d-bcca-db034248e3aa",
+      "name": "AtualizaRequisicaoMovida",
+      "credentials": {
+        "mySql": {
+          "id": "pAsif1g6D0J4GEIE",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "VerificaDispositivoCadastrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "CadastraDispositivo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "VerificaRequisicaoDeMovimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VerificaDispositivoCadastrado": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CadastraDispositivo": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VerificaRequisicaoDeMovimento": {
+      "main": [
+        [
+          {
+            "node": "EnviaRequisicaoParaEsp32",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EnviaRequisicaoParaEsp32": {
+      "main": [
+        [
+          {
+            "node": "AtualizaRequisicaoMovida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AtualizaRequisicaoMovida": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "12b14739-13d2-4542-86ee-408ddc6e11f0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e021cccfca5471517d93ec2b8704826295a25fb71f9297d05c75cd7b97b17292"
+  },
+  "id": "QB13eevfBMwwPiBu",
+  "tags": []
+}
